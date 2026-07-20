@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Ticket Classifier - Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .title-icon {
+            font-size: 2em;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #8b7aff 0%, #c77aff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 0.95em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(45, 45, 68, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 122, 255, 0.1);
+        }
+
+        .panel-header {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #d1d5db;
+            font-size: 0.9em;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(30, 30, 46, 0.8);
+            border: 1px solid rgba(139, 122, 255, 0.3);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 0.95em;
+            font-family: inherit;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #8b7aff;
+            box-shadow: 0 0 0 3px rgba(139, 122, 255, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 200px;
+            font-family: inherit;
+        }
+
+        .source-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .source-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(30, 30, 46, 0.6);
+            border: 2px solid rgba(139, 122, 255, 0.3);
+            border-radius: 8px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .source-btn.active {
+            background: rgba(139, 122, 255, 0.2);
+            border-color: #8b7aff;
+            color: #8b7aff;
+        }
+
+        .classify-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #8b7aff 0%, #c77aff 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+        }
+
+        .classify-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(139, 122, 255, 0.4);
+        }
+
+        .classify-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result-section {
+            margin-bottom: 20px;
+        }
+
+        .result-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .result-card {
+            background: rgba(30, 30, 46, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 3px solid;
+        }
+
+        .result-card.category { border-left-color: #8b7aff; }
+        .result-card.team { border-left-color: #60a5fa; }
+        .result-card.priority { border-left-color: #f59e0b; }
+        .result-card.sentiment { border-left-color: #ec4899; }
+
+        .result-label {
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.low { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge.medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .badge.high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .badge.critical { background: rgba(220, 38, 38, 0.3); color: #ef4444; }
+
+        .badge.positive { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .badge.neutral { background: rgba(156, 163, 175, 0.2); color: #9ca3af; }
+        .badge.negative { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+        .badge.angry { background: rgba(220, 38, 38, 0.3); color: #ef4444; }
+
+        .confidence-bar {
+            margin-top: 15px;
+        }
+
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            color: #9ca3af;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(30, 30, 46, 0.8);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b7aff 0%, #c77aff 100%);
+            transition: width 0.6s ease;
+        }
+
+        .reasoning-box {
+            background: rgba(30, 30, 46, 0.6);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .reasoning-label {
+            font-size: 0.85em;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .reasoning-text {
+            color: #d1d5db;
+            line-height: 1.6;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fbbf24;
+        }
+
+        .alert.danger {
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #ef4444;
+        }
+
+        .metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .metadata-item {
+            background: rgba(30, 30, 46, 0.4);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+
+        .metadata-label {
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+
+        .metadata-value {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(139, 122, 255, 0.1);
+            border-top: 3px solid #8b7aff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="title">
+                <span class="title-icon">🎫</span>
+                <h1>Support Ticket Classifier</h1>
+            </div>
+            <p class="subtitle">LangChain + GPT-4o-mini • Production Ready</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Panel -->
+            <div class="panel">
+                <div class="panel-header">TICKET INPUT</div>
+
+                <div class="source-selector">
+                    <button class="source-btn" onclick="selectSource('email')" data-source="email">
+                        📧 Email
+                    </button>
+                    <button class="source-btn active" onclick="selectSource('web_form')" data-source="web_form">
+                        💻 Web Form
+                    </button>
+                    <button class="source-btn" onclick="selectSource('chat')" data-source="chat">
+                        💬 Chat
+                    </button>
+                </div>
+
+                <div class="input-group">
+                    <label for="subject">Subject:</label>
+                    <input type="text" id="subject" placeholder="Brief description of the issue...">
+                </div>
+
+                <div class="input-group">
+                    <label for="message">Message:</label>
+                    <textarea id="message" placeholder="Detailed ticket message...
+
+Example: 
+My package was supposed to arrive 5 days ago and it still hasn't shown up. I've been waiting at home all week. This is completely unacceptable. Order #98765. I want an immediate update or a full refund!"></textarea>
+                </div>
+
+                <button class="classify-btn" onclick="classifyTicket()">
+                    Classify Ticket
+                </button>
+            </div>
+
+            <!-- Result Panel -->
+            <div class="panel">
+                <div class="panel-header">CLASSIFICATION RESULT</div>
+
+                <div id="result-content" class="hidden">
+                    <div class="result-row">
+                        <div class="result-card category">
+                            <div class="result-label">Category</div>
+                            <div class="result-value" id="category-value">-</div>
+                        </div>
+                        <div class="result-card team">
+                            <div class="result-label">Assigned Team</div>
+                            <div class="result-value" id="team-value">-</div>
+                        </div>
+                    </div>
+
+                    <div class="result-row">
+                        <div class="result-card priority">
+                            <div class="result-label">Priority</div>
+                            <div class="result-value" id="priority-value">-</div>
+                        </div>
+                        <div class="result-card sentiment">
+                            <div class="result-label">Sentiment</div>
+                            <div class="result-value" id="sentiment-value">-</div>
+                        </div>
+                    </div>
+
+                    <div class="confidence-bar">
+                        <div class="confidence-label">
+                            <span>CONFIDENCE SCORE</span>
+                            <span id="confidence-percent">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="confidence-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="reasoning-box">
+                        <div class="reasoning-label">REASONING</div>
+                        <div class="reasoning-text" id="reasoning-text">-</div>
+                    </div>
+
+                    <div id="alerts-container"></div>
+
+                    <div class="metadata">
+                        <div class="metadata-item">
+                            <div class="metadata-label">Model Used</div>
+                            <div class="metadata-value" id="model-value">-</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Prompt Version</div>
+                            <div class="metadata-value" id="prompt-value">-</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Processing Time</div>
+                            <div class="metadata-value" id="time-value">-</div>
+                        </div>
+                        <div class="metadata-item">
+                            <div class="metadata-label">Est. Cost</div>
+                            <div class="metadata-value" id="cost-value">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading-content" class="loading hidden">
+                    <div class="spinner"></div>
+                    <div>Classifying ticket...</div>
+                </div>
+
+                <div id="empty-state" style="text-align: center; padding: 60px 20px; color: #6b7280;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">📊</div>
+                    <div>Enter a ticket and click "Classify" to see results</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSource = 'web_form';
+
+        function selectSource(source) {
+            currentSource = source;
+            document.querySelectorAll('.source-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-source="${source}"]`).classList.add('active');
+        }
+
+        async function classifyTicket() {
+            const subject = document.getElementById('subject').value.trim();
+            const message = document.getElementById('message').value.trim();
+
+            if (!subject || !message) {
+                alert('Please enter both subject and message');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('result-content').classList.add('hidden');
+            document.getElementById('loading-content').classList.remove('hidden');
+            document.querySelector('.classify-btn').disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:5178/classify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        message: message,
+                        source: currentSource
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Classification failed');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+                document.getElementById('loading-content').classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+            } finally {
+                document.querySelector('.classify-btn').disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Hide loading, show results
+            document.getElementById('loading-content').classList.add('hidden');
+            document.getElementById('result-content').classList.remove('hidden');
+
+            // Display classification
+            const classification = data.classification;
+            
+            document.getElementById('category-value').textContent = 
+                classification.issue_category.replace(/_/g, ' ').toUpperCase();
+            
+            document.getElementById('team-value').textContent = 
+                classification.assigned_team.replace(/_/g, ' ').toUpperCase();
+            
+            const priorityBadge = `<span class="badge ${classification.priority}">${classification.priority.toUpperCase()}</span>`;
+            document.getElementById('priority-value').innerHTML = priorityBadge;
+            
+            const sentimentBadge = `<span class="badge ${classification.user_sentiment}">${classification.user_sentiment.toUpperCase()}</span>`;
+            document.getElementById('sentiment-value').innerHTML = sentimentBadge;
+
+            // Confidence score
+            const confidence = (classification.confidence_score * 100).toFixed(0);
+            document.getElementById('confidence-percent').textContent = confidence + '%';
+            document.getElementById('confidence-fill').style.width = confidence + '%';
+
+            // Reasoning
+            document.getElementById('reasoning-text').textContent = classification.reasoning;
+
+            // Alerts
+            const alertsContainer = document.getElementById('alerts-container');
+            alertsContainer.innerHTML = '';
+
+            if (classification.requires_human_review) {
+                alertsContainer.innerHTML += `
+                    <div class="alert warning">
+                        ⚠️ Flagged for human review
+                    </div>
+                `;
+            }
+
+            if (data.injection_attempt_blocked) {
+                alertsContainer.innerHTML += `
+                    <div class="alert danger">
+                        🛡️ Injection attempt blocked
+                    </div>
+                `;
+            }
+
+            if (data.pii_detected) {
+                alertsContainer.innerHTML += `
+                    <div class="alert warning">
+                        🔒 PII detected and redacted
+                    </div>
+                `;
+            }
+
+            // Metadata
+            document.getElementById('model-value').textContent = data.model_used;
+            document.getElementById('prompt-value').textContent = data.prompt_version;
+            document.getElementById('time-value').textContent = 
+                Math.round(data.processing_time_ms) + 'ms';
+            document.getElementById('cost-value').textContent = 
+                data.estimated_cost ? '$' + data.estimated_cost.toFixed(6) : 'N/A';
+        }
+
+        // Load example on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // You can uncomment this to load an example
+            // document.getElementById('subject').value = "Double charge on my account";
+            // document.getElementById('message').value = "Hello,\n\nI noticed I was charged twice for order #44321...";
+        });
+    </script>
+</body>
+</html>
